@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ESP SELECTOR · подбор УЭЦН</title>
+    <style>
+        :root {
+            --bg: #f5f5f7;
+            --card-bg: #ffffff;
+            --text-primary: #1d1d1f;
+            --text-secondary: #6e6e73;
+            --text-tertiary: #86868b;
+            --accent: #0071e3;
+            --accent-hover: #0077ed;
+            --accent-light: #e8f2fd;
+            --border: #e5e5ea;
+            --success: #34c759;
+            --warning: #ff9500;
+            --shadow-sm: 0 1px 3px rgba(0,0,0,0.06);
+            --shadow-md: 0 4px 16px rgba(0,0,0,0.08);
+            --radius-sm: 8px;
+            --radius-md: 14px;
+            --radius-lg: 20px;
+            --transition: 0.22s cubic-bezier(0.25, 0.1, 0.25, 1);
+        }
+        *{margin:0;padding:0;box-sizing:border-box;}
+        body{
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: var(--bg); color: var(--text-primary); line-height: 1.5;
+            -webkit-font-smoothing: antialiased; min-height: 100vh;
+        }
+        body::before{
+            content:''; position:fixed; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:-1;
+            background: radial-gradient(ellipse at 20% 15%, rgba(0,113,227,0.03) 0%, transparent 60%),
+                        radial-gradient(ellipse at 80% 75%, rgba(0,113,227,0.02) 0%, transparent 55%),
+                        radial-gradient(ellipse at 50% 50%, rgba(0,0,0,0.01) 0%, transparent 70%);
+        }
+        .container{max-width:820px; margin:0 auto; padding:24px 20px 60px; animation: subtleAppear 0.5s ease-out;}
+        @keyframes subtleAppear{from{opacity:0}to{opacity:1}}
+        .header{text-align:center; padding:28px 0 8px;}
+        .header .badge{display:inline-block; font-size:13px; font-weight:600; letter-spacing:0.04em; text-transform:uppercase; color:var(--accent); background:var(--accent-light); padding:6px 16px; border-radius:20px; margin-bottom:14px;}
+        .header h1{font-size:34px; font-weight:700; letter-spacing:-0.02em; color:var(--text-primary);}
+        .header .subtitle{font-size:16px; color:var(--text-secondary); margin-top:6px; font-weight:400;}
+        .card{background:var(--card-bg); border-radius:var(--radius-lg); padding:28px 32px; margin-bottom:18px; box-shadow:var(--shadow-sm); border:1px solid var(--border); transition: box-shadow var(--transition);}
+        .card:hover{box-shadow:var(--shadow-md);}
+        .card-header{display:flex; align-items:center; gap:10px; margin-bottom:22px;}
+        .card-header .icon{width:36px; height:36px; border-radius:var(--radius-sm); display:flex; align-items:center; justify-content:center; font-size:18px; flex-shrink:0;}
+        .icon-input{background:#e8f2fd; color:var(--accent);}
+        .card-header h2{font-size:20px; font-weight:600; letter-spacing:-0.01em;}
+        .form-grid{display:grid; grid-template-columns:1fr 1fr; gap:16px 20px;}
+        .form-grid.col-3{grid-template-columns:1fr 1fr 1fr;}
+        .form-group{display:flex; flex-direction:column; gap:5px;}
+        .form-group.full{grid-column:1/-1;}
+        .form-group label{font-size:13px; font-weight:600; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.01em;}
+        .form-group .input-wrapper{position:relative; display:flex; align-items:center;}
+        .form-group input, .form-group select{
+            width:100%; padding:12px 14px; font-size:16px; font-family:inherit; border:1.5px solid var(--border);
+            border-radius:var(--radius-sm); background:#fafafa; color:var(--text-primary); transition:all var(--transition);
+            appearance:none; outline:none; font-weight:500;
+        }
+        .form-group input:focus, .form-group select:focus{border-color:var(--accent); background:#fff; box-shadow:0 0 0 4px rgba(0,113,227,0.08);}
+        .form-group select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236e6e73' stroke-width='2' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 14px center; padding-right:36px; cursor:pointer;}
+        .form-group .unit{position:absolute; right:14px; font-size:13px; color:var(--text-tertiary); pointer-events:none;}
+        .form-group input.with-unit{padding-right:50px;}
+        .divider{border:none; border-top:1px solid var(--border); margin:20px 0;}
+        .btn{display:inline-flex; align-items:center; justify-content:center; gap:8px; padding:14px 32px; font-size:16px; font-weight:600; font-family:inherit; border:none; border-radius:28px; cursor:pointer; transition:all var(--transition); letter-spacing:-0.01em;}
+        .btn-primary{background:var(--accent); color:#fff; box-shadow:0 2px 8px rgba(0,113,227,0.3);}
+        .btn-primary:hover{background:var(--accent-hover); box-shadow:0 4px 16px rgba(0,113,227,0.4); transform:translateY(-1px);}
+        .btn-primary:active{transform:scale(0.97);}
+        .btn-block{width:100%; justify-content:center;}
+        .results-container{display:none; animation:fadeSlideIn 0.45s ease-out;}
+        .results-container.visible{display:block;}
+        @keyframes fadeSlideIn{from{opacity:0;transform:translateY(18px);}to{opacity:1;transform:translateY(0);}}
+        .result-summary{background:var(--card-bg); border-radius:var(--radius-lg); padding:24px 28px; display:flex; align-items:center; gap:20px; flex-wrap:wrap; box-shadow:var(--shadow-md); border:1px solid var(--border); margin-bottom:16px;}
+        .result-pump-icon{width:56px; height:56px; border-radius:50%; background:var(--accent-light); display:flex; align-items:center; justify-content:center; font-size:26px; flex-shrink:0;}
+        .result-main{flex:1; min-width:180px;}
+        .result-main .pump-name{font-size:22px; font-weight:700; letter-spacing:-0.02em;}
+        .result-main .pump-desc{font-size:14px; color:var(--text-secondary); margin-top:4px;}
+        .result-stats{display:flex; gap:28px; flex-wrap:wrap;}
+        .result-stat{text-align:center;}
+        .result-stat .value{font-size:22px; font-weight:700;}
+        .result-stat .label{font-size:11px; color:var(--text-tertiary); text-transform:uppercase; letter-spacing:0.03em; margin-top:2px;}
+        .equipment-row{display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:14px;}
+        .equipment-row.single{grid-template-columns:1fr;}
+        .eq-card{background:#fafafa; border-radius:var(--radius-md); padding:18px 20px; border:1px solid var(--border); transition:all var(--transition);}
+        .eq-card:hover{background:#fff; box-shadow:var(--shadow-sm);}
+        .eq-card .eq-title{font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:0.04em; color:var(--text-tertiary); margin-bottom:6px;}
+        .eq-card .eq-model{font-size:18px; font-weight:700; color:var(--text-primary);}
+        .eq-card .eq-specs{font-size:13px; color:var(--text-secondary); margin-top:4px; line-height:1.6;}
+        .eq-card .eq-specs span{display:inline-block; margin-right:14px;}
+        .note{display:flex; align-items:flex-start; gap:10px; padding:14px 18px; border-radius:var(--radius-md); font-size:13px; color:#8b6914; background:#fffdf5; border:1px solid #f0e4b8; margin-top:12px;}
+        .note.warning{color:#8b3a14; background:#fffaf7; border-color:#f0c8b0;}
+        .alt-table{width:100%; border-collapse: collapse; margin-top:10px; font-size:13px;}
+        .alt-table th, .alt-table td{padding:6px 10px; border:1px solid var(--border); text-align:center;}
+        .alt-table th{background:var(--accent-light); font-weight:600;}
+        @media(max-width:640px){
+            .form-grid,.form-grid.col-3{grid-template-columns:1fr;}
+            .equipment-row{grid-template-columns:1fr;}
+            .header h1{font-size:26px;}
+            .card{padding:18px 16px;}
+            .result-summary{flex-direction:column; text-align:center;}
+            .result-stats{justify-content:center; gap:16px;}
+            .result-main .pump-name{font-size:20px;}
+            .result-stat .value{font-size:18px;}
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <header class="header no-print">
+        <div class="badge">инженерный модуль для подбора УЭЦН</div>
+        <h1>ESP SELECTOR</h1>
+        <p class="subtitle">Точный расчёт по каталогу оборудования</p>
+    </header>
+
+    <div class="card no-print">
+        <div class="card-header"><div class="icon icon-input">📐</div><h2>Параметры скважины</h2></div>
+        <div class="form-grid">
+            <div class="form-group"><label>Дебит жидкости, Q</label><div class="input-wrapper"><input type="number" id="flowRate" class="with-unit" placeholder="Например, 120" min="5" max="2000" step="1" value="125"><span class="unit">м³/сут</span></div></div>
+            <div class="form-group"><label>Требуемый напор, H</label><div class="input-wrapper"><input type="number" id="totalHead" class="with-unit" placeholder="Например, 1400" min="50" max="4000" step="10" value="2919"><span class="unit">м</span></div></div>
+            <div class="form-group"><label>Диаметр обсадной колонны</label><select id="casingDiameter">
+                <option value="102">102 мм (2А)</option>
+                <option value="114">114 мм (3,4)</option>
+                <option value="140">140 мм (5)</option>
+                <option value="146" selected>146 мм (5А)</option>
+                <option value="168">168 мм (6)</option>
+            </select></div>
+            <div class="form-group"><label>Плотность жидкости, ρ</label><div class="input-wrapper"><input type="number" id="fluidDensity" class="with-unit" placeholder="850–1100" min="700" max="1300" step="5" value="960"><span class="unit">кг/м³</span></div></div>
+            <div class="form-group"><label>Температура на приёме</label><div class="input-wrapper"><input type="number" id="bottomTemp" class="with-unit" placeholder="60–150" min="20" max="200" step="1" value="85"><span class="unit">°C</span></div></div>
+            <div class="form-group"><label>Обводнённость</label><div class="input-wrapper"><input type="number" id="waterCut" class="with-unit" placeholder="0–100" min="0" max="100" step="1" value="65"><span class="unit">%</span></div></div>
+        </div>
+        <hr class="divider">
+        <div class="form-grid">
+            <div class="form-group"><label>Глубина спуска насоса</label><div class="input-wrapper"><input type="number" id="pumpDepth" class="with-unit" placeholder="Глубина" min="200" max="4000" step="10" value="2600"><span class="unit">м</span></div></div>
+            <div class="form-group"><label>Давление на устье</label><div class="input-wrapper"><input type="number" id="wellheadPressure" class="with-unit" placeholder="Устьевое" min="0" max="100" step="1" value="30"><span class="unit">атм</span></div></div>
+            <div class="form-group"><label>Давление на приёме</label><div class="input-wrapper"><input type="number" id="intakePressure" class="with-unit" placeholder="Если неизвестно – 0" min="0" max="500" step="1" value="0"><span class="unit">атм</span></div></div>
+            <div class="form-group"><label>Частота (ЧРП), Гц</label><div class="input-wrapper"><input type="number" id="frequency" class="with-unit" placeholder="50" min="35" max="70" step="1" value="50"><span class="unit">Гц</span></div></div>
+            <div class="form-group full"><label style="display:flex;align-items:center;gap:6px;"><input type="checkbox" id="calcHeadAuto" checked style="width:18px;height:18px;">Рассчитывать напор автоматически</label></div>
+        </div>
+        <div style="margin-top:20px;"><button class="btn btn-primary btn-block" onclick="calculateESP()">⚡ Подобрать УЭЦН</button></div>
+    </div>
+
+    <!-- Скрытое поле для ручного выбора насоса -->
+    <input type="hidden" id="selectedPumpModel" value="">
+
+    <div class="results-container" id="resultsContainer"></div>
+    <div class="no-print" style="text-align:center;padding:16px;color:var(--text-tertiary);font-size:12px;">
+        ESP SELECTOR · Developer: A.I. Nosar
+    </div>
+</div>
+
+<script>
+// ==================== КАТАЛОГ ОБОРУДОВАНИЯ ====================
+const CATALOG = {
+    pumps: [
+        {model:'Х25ЭЦНКИС2А-30И', qNom:30, headStage:5.6, qMin:18, qMax:45, eff:0.38, maxStages:450, diam:69, series:'2А', weightStage:1.6, stagesPerSection:150, maxShaftPower:61, minInnerDiam:87},
+        {model:'Х25ЭЦНКИС2А-50И', qNom:50, headStage:5.2, qMin:30, qMax:70, eff:0.44, maxStages:420, diam:69, series:'2А', weightStage:1.8, stagesPerSection:150, maxShaftPower:61, minInnerDiam:87},
+        {model:'Х25ЭЦНКИС2А-80И', qNom:80, headStage:4.7, qMin:50, qMax:110, eff:0.50, maxStages:380, diam:69, series:'2А', weightStage:2.0, stagesPerSection:150, maxShaftPower:61, minInnerDiam:87},
+        {model:'Х22ЭЦНКИС2А-160', qNom:160, headStage:4.1, qMin:100, qMax:220, eff:0.54, maxStages:320, diam:69, series:'2А', weightStage:2.5, stagesPerSection:150, maxShaftPower:61, minInnerDiam:87},
+        {model:'Х22ЭЦНКИС2А-200', qNom:200, headStage:3.9, qMin:130, qMax:260, eff:0.56, maxStages:280, diam:69, series:'2А', weightStage:2.8, stagesPerSection:150, maxShaftPower:61, minInnerDiam:87},
+        {model:'Х22ЭЦНКИД5-30', qNom:30, headStage:5.6, qMin:18, qMax:45, eff:0.38, maxStages:450, diam:92, series:'5', weightStage:2.1, stagesPerSection:200, maxShaftPower:101, minInnerDiam:121.7},
+        {model:'Х22ЭЦНКИД5-50', qNom:50, headStage:5.2, qMin:30, qMax:70, eff:0.44, maxStages:420, diam:92, series:'5', weightStage:2.3, stagesPerSection:200, maxShaftPower:101, minInnerDiam:121.7},
+        {model:'Х22ЭЦНКИД5-80', qNom:80, headStage:4.7, qMin:50, qMax:110, eff:0.50, maxStages:400, diam:92, series:'5', weightStage:2.5, stagesPerSection:200, maxShaftPower:101, minInnerDiam:121.7},
+        {model:'Х22ЭЦНКИД5-125', qNom:125, headStage:4.3, qMin:80, qMax:170, eff:0.54, maxStages:350, diam:92, series:'5', weightStage:2.7, stagesPerSection:200, maxShaftPower:101, minInnerDiam:121.7},
+        {model:'Х22ЭЦНКИД5-160', qNom:160, headStage:4.1, qMin:100, qMax:220, eff:0.56, maxStages:320, diam:92, series:'5', weightStage:3.0, stagesPerSection:200, maxShaftPower:101, minInnerDiam:121.7},
+        {model:'Х22ЭЦНКИД5А-50', qNom:50, headStage:5.2, qMin:30, qMax:70, eff:0.44, maxStages:380, diam:103, series:'5А', weightStage:3.1, stagesPerSection:250, maxShaftPower:169, minInnerDiam:130},
+        {model:'Х22ЭЦНКИД5А-80', qNom:80, headStage:4.7, qMin:50, qMax:110, eff:0.50, maxStages:360, diam:103, series:'5А', weightStage:3.3, stagesPerSection:250, maxShaftPower:169, minInnerDiam:130},
+        {model:'Х22ЭЦНКИД5А-125', qNom:125, headStage:4.3, qMin:80, qMax:170, eff:0.54, maxStages:320, diam:103, series:'5А', weightStage:3.5, stagesPerSection:250, maxShaftPower:169, minInnerDiam:130},
+        {model:'Х22ЭЦНКИД5А-160', qNom:160, headStage:4.1, qMin:100, qMax:220, eff:0.56, maxStages:300, diam:103, series:'5А', weightStage:3.8, stagesPerSection:250, maxShaftPower:169, minInnerDiam:130},
+        {model:'Х22ЭЦНКИД5А-250', qNom:250, headStage:3.7, qMin:160, qMax:330, eff:0.59, maxStages:260, diam:103, series:'5А', weightStage:4.3, stagesPerSection:250, maxShaftPower:169, minInnerDiam:130},
+        {model:'Х22ЭЦНКИД5А-400', qNom:400, headStage:3.3, qMin:260, qMax:500, eff:0.61, maxStages:210, diam:103, series:'5А', weightStage:5.2, stagesPerSection:250, maxShaftPower:169, minInnerDiam:130},
+        {model:'Х22ЭЦНКИС6-1000', qNom:1000, headStage:2.7, qMin:650, qMax:1200, eff:0.65, maxStages:140, diam:114, series:'6', weightStage:8.0, stagesPerSection:200, maxShaftPower:280, minInnerDiam:143},
+        {model:'Х22ЭЦНКИС7А-1500', qNom:1500, headStage:2.4, qMin:950, qMax:1750, eff:0.67, maxStages:110, diam:136, series:'7А', weightStage:11.0, stagesPerSection:200, maxShaftPower:379, minInnerDiam:165},
+    ],
+    motors: (() => {
+        const base = [];
+        const add = (diam, powers, voltBase, lenPerKW) => {
+            powers.forEach(p => {
+                const voltage = Math.round(voltBase + p * 2.2);
+                const current = Math.round(p * 1000 / (Math.sqrt(3) * voltage * 0.82));
+                const length = +(p * lenPerKW).toFixed(1);
+                const weight = Math.round(length * 40);
+                base.push({model:`ПЭД-${p}-${diam}В5`, power:p, voltage, current, length, diam, weight, series:`ПЭД-${diam}`});
+            });
+        };
+        add(103,[8,12,16,22,28,32,40,45,50,63,80], 480, 0.38);
+        add(117,[8,12,16,22,28,32,40,45,50,63,80,100], 500, 0.34);
+        add(130,[22,28,32,40,45,50,63,80,100,125,160,180], 550, 0.30);
+        add(143,[63,80,100,125,160,180,220], 620, 0.26);
+        return base;
+    })(),
+    cables: [
+        { model: 'КПБК 3×10',  section: 10,   current: 43,  maxTemp: 90 },
+        { model: 'КПБК 3×16',  section: 16,   current: 58,  maxTemp: 90 },
+        { model: 'КПБК 3×25',  section: 25,   current: 78,  maxTemp: 90 },
+        { model: 'КПпБП-130 3×13.3', section: 13.3, current: 55, maxTemp: 130 },
+        { model: 'КПпБП-130 3×16',   section: 16,   current: 64, maxTemp: 130 },
+        { model: 'КПпБП-130 3×21.15', section: 21.15, current: 80, maxTemp: 130 },
+        { model: 'КПпБП-130 3×25',   section: 25,   current: 90, maxTemp: 130 },
+        { model: 'КПпБП-130 3×35',   section: 35,   current: 110, maxTemp: 130 },
+        { model: 'КПпБП-130 3×50',   section: 50,   current: 145, maxTemp: 130 },
+    ],
+    protectors: {
+        103: {model:'2ПА103Д', load:1200, oil:7.0},
+        117: {model:'3ПА114Д', load:1500, oil:11.0},
+        130: {model:'3ПА130Д', load:2000, oil:13.0},
+        143: {model:'3ПА130Д', load:2500, oil:15.0},
+    }
+};
+
+const TMPN_CATALOG = [
+    { type: "ТМПН-40/463",   power: 40,  currentNN: 87,  voltageNN: 463,  steps: 5,  stepVoltage: 463/5 },
+    { type: "ТМПН-63/611",   power: 63,  currentNN: 103, voltageNN: 611,  steps: 10, stepVoltage: 611/10 },
+    { type: "ТМПН-100/736",  power: 100, currentNN: 136, voltageNN: 736,  steps: 10, stepVoltage: 736/10 },
+    { type: "ТМПН-160/1090", power: 160, currentNN: 147, voltageNN: 1090, steps: 10, stepVoltage: 1090/10 },
+    { type: "ТМПН-250/2247", power: 250, currentNN: 111, voltageNN: 2247, steps: 25, stepVoltage: 2247/25 },
+    { type: "ТМПН-400/6",    power: 400, currentNN: 160, voltageNN: 2500, steps: 10, stepVoltage: 2500/10 },
+    { type: "ТМПН-630/6",    power: 630, currentNN: 252, voltageNN: 2500, steps: 10, stepVoltage: 2500/10 },
+    { type: "ТМПН-1000/6",   power: 1000,currentNN: 400, voltageNN: 2500, steps: 10, stepVoltage: 2500/10 },
+    { type: "ТМПН-1600/6",   power: 1600,currentNN: 640, voltageNN: 2500, steps: 10, stepVoltage: 2500/10 }
+];
+
+// ==================== ФУНКЦИИ ПОДБОРА ====================
+function calculateHeadFromDepth(pumpDepth, fluidDensity, wellheadPressureAtm, intakePressureAtm = 0) {
+    const headFromPressure = ((wellheadPressureAtm - intakePressureAtm) * 10.197) / (fluidDensity / 1000);
+    return Math.round(pumpDepth + headFromPressure);
+}
+
+function getMinInnerDiamLimit(casingDiam) {
+    const map = {
+        102: 87,
+        114: 100,
+        140: 121.7,
+        146: 130,
+        168: 143
+    };
+    return map[casingDiam] || 121.7;
+}
+
+// Сбор всех насосов, подходящих по диаметру и дебиту
+function findAllSuitablePumps(flowRate, casingDiam) {
+    const minInnerLimit = getMinInnerDiamLimit(casingDiam);
+    let candidates = CATALOG.pumps.filter(p => p.minInnerDiam <= minInnerLimit && 
+                                               flowRate >= p.qMin*0.7 && flowRate <= p.qMax*1.2);
+    if (candidates.length === 0) {
+        candidates = CATALOG.pumps.filter(p => p.minInnerDiam <= minInnerLimit);
+    }
+    candidates.sort((a,b) => Math.abs(a.qNom - flowRate) - Math.abs(b.qNom - flowRate));
+    return candidates;
+}
+
+function findMotor(requiredPowerKW, casingDiam) {
+    let maxMotorDiam;
+    if (casingDiam >= 168) maxMotorDiam = 130;
+    else if (casingDiam >= 146) maxMotorDiam = 117;
+    else if (casingDiam >= 140) maxMotorDiam = 103;
+    else maxMotorDiam = 103;
+    let candidates = CATALOG.motors.filter(m => m.diam <= maxMotorDiam && m.power >= requiredPowerKW);
+    if (candidates.length === 0) candidates = CATALOG.motors.filter(m => m.diam <= maxMotorDiam);
+    if (candidates.length === 0) candidates = CATALOG.motors;
+    candidates.sort((a,b) => a.power - b.power);
+    return candidates[0];
+}
+
+function selectCable(motorCurrent, bottomTemp) {
+    const isHot = bottomTemp > 90;
+    const candidates = CATALOG.cables.filter(c => c.maxTemp >= (isHot ? 130 : 90));
+    if (candidates.length === 0) return null;
+    const tempDerating = isHot ? Math.max(0.6, 1 - (bottomTemp - 90) * 0.008) : 1.0;
+    const requiredCurrent = motorCurrent / tempDerating;
+    let best = null;
+    for (let c of candidates.sort((a,b) => a.section - b.section)) {
+        if (c.current >= requiredCurrent) {
+            best = c;
+            break;
+        }
+    }
+    if (!best) best = candidates.reduce((prev, curr) => prev.current > curr.current ? prev : curr);
+    return { cable: best, note: isHot ? 'с термовставкой' : '' };
+}
+
+function calculateCableLoss(current, length, section, temperature, rho = 0.0175) {
+    const Kt = 1 + 0.0043 * (temperature - 20);
+    const resistance = rho * (length / section) * Kt;
+    return Math.sqrt(3) * current * resistance;
+}
+
+function selectTransformerAndTap(motorVoltage, motorCurrent, cableLoss) {
+    const requiredVoltage = motorVoltage + cableLoss;
+    let best = null;
+    for (let t of TMPN_CATALOG) {
+        if (t.voltageNN >= requiredVoltage && t.currentNN >= motorCurrent) {
+            if (!best || t.power < best.power) best = t;
+        }
+    }
+    if (!best) best = TMPN_CATALOG[TMPN_CATALOG.length-1];
+    const tapNumber = Math.round(requiredVoltage / best.stepVoltage);
+    const actualVoltage = Math.min(best.voltageNN, tapNumber * best.stepVoltage);
+    return {
+        transformer: best,
+        requiredVoltage: Math.round(requiredVoltage),
+        tap: tapNumber,
+        actualVoltage: Math.round(actualVoltage)
+    };
+}
+
+function formatPumpName(rawModel, actualHead) {
+    let base = rawModel.replace(/^Х\d+/, '').replace(/\s+/g, '');
+    return `${base}-${actualHead}`;
+}
+
+// ==================== ГЛАВНАЯ ФУНКЦИЯ ====================
+function calculateESP() {
+    let flowRate = parseFloat(document.getElementById('flowRate').value) || 125;
+    let totalHead = parseFloat(document.getElementById('totalHead').value) || 2919;
+    const casingDiam = parseInt(document.getElementById('casingDiameter').value);
+    const fluidDensity = parseFloat(document.getElementById('fluidDensity').value) || 960;
+    const bottomTemp = parseFloat(document.getElementById('bottomTemp').value) || 85;
+    const waterCut = parseFloat(document.getElementById('waterCut').value) || 65;
+    const pumpDepth = parseFloat(document.getElementById('pumpDepth').value) || 2600;
+    const wellheadPressure = parseFloat(document.getElementById('wellheadPressure').value) || 30;
+    const intakePressure = parseFloat(document.getElementById('intakePressure').value) || 0;
+    const frequency = parseFloat(document.getElementById('frequency').value) || 50;
+    const calcAuto = document.getElementById('calcHeadAuto').checked;
+    const manualModel = document.getElementById('selectedPumpModel').value;
+
+    if (calcAuto && pumpDepth > 0) {
+        totalHead = calculateHeadFromDepth(pumpDepth, fluidDensity, wellheadPressure, intakePressure);
+        document.getElementById('totalHead').value = totalHead;
+    }
+
+    // Получаем список подходящих насосов
+    const suitablePumps = findAllSuitablePumps(flowRate, casingDiam);
+    if (suitablePumps.length === 0) { alert('Не найдено подходящих насосов. Проверьте диаметр колонны и дебит.'); return; }
+
+    // Определяем выбранный насос: ручной выбор или автоматически первый
+    let pump;
+    if (manualModel) {
+        pump = suitablePumps.find(p => p.model === manualModel) || suitablePumps[0];
+    } else {
+        pump = suitablePumps[0];
+    }
+
+    const headPerStageAdj = pump.headStage * (1 - (fluidDensity - 1000) / 1000 * 0.15) * (frequency/50)**2;
+    let stagesNeeded = Math.ceil(totalHead / headPerStageAdj);
+    let stagesWarning = '';
+    if (stagesNeeded > pump.maxStages) {
+        stagesWarning = `Требуется ${stagesNeeded} ступеней, максимум одной секции — ${pump.maxStages}. Потребуется несколько секций или другой насос.`;
+    }
+    const actualHead = Math.round(stagesNeeded * headPerStageAdj);
+    const sections = Math.ceil(stagesNeeded / pump.stagesPerSection);
+
+    const Q_m3s = flowRate / 86400;
+    const shaftPowerKW = (Q_m3s * totalHead * fluidDensity * 9.81) / (pump.eff * 1000) * (frequency/50)**3;
+    let powerWarning = '';
+    if (shaftPowerKW > pump.maxShaftPower) {
+        powerWarning = `⚠️ Мощность на валу (${Math.round(shaftPowerKW)} кВт) превышает допустимую для данного насоса (${pump.maxShaftPower} кВт). Требуется усиленный вал или другой насос.`;
+    }
+    const shaftPowerWithMargin = shaftPowerKW * 1.15;
+
+    const motor = findMotor(shaftPowerWithMargin, casingDiam);
+    const motorLoadPercent = motor ? Math.round(shaftPowerKW / motor.power * 100) : 0;
+
+    const cableData = selectCable(motor ? motor.current : 0, bottomTemp);
+    const cable = cableData ? cableData.cable : null;
+    const cableNote = cableData ? cableData.note : '';
+
+    const cableLength = pumpDepth + 100;
+    const cableLoss = cable ? calculateCableLoss(motor.current, cableLength, cable.section, bottomTemp) : 0;
+
+    const motorKVA = motor ? (motor.voltage * motor.current * Math.sqrt(3)) / 1000 : 0;
+    const transformerData = selectTransformerAndTap(motor.voltage, motor.current, cableLoss);
+    const transformer = transformerData.transformer;
+
+    const pumpLength = +(stagesNeeded * 0.035).toFixed(1);
+    const totalLength = motor ? +(pumpLength + motor.length + 1.8).toFixed(1) : pumpLength;
+    const pumpWeight = Math.round(stagesNeeded * pump.weightStage);
+    const totalWeight = motor ? pumpWeight + motor.weight + 120 : pumpWeight + 120;
+    const protector = CATALOG.protectors[motor ? motor.diam : 117] || {model:'2ПА103Д', load:'—'};
+
+    const formattedPump = formatPumpName(pump.model, actualHead);
+
+    // Строим таблицу альтернативных насосов с расчетом ступеней/секций
+    let altRows = '';
+    suitablePumps.forEach(p => {
+        const hStageAdj = p.headStage * (1 - (fluidDensity - 1000) / 1000 * 0.15) * (frequency/50)**2;
+        let st = Math.ceil(totalHead / hStageAdj);
+        const sec = Math.ceil(st / p.stagesPerSection);
+        const isSelected = (p.model === pump.model);
+        altRows += `<tr style="${isSelected ? 'background:#e8f2fd;font-weight:600;' : ''}">
+            <td>${p.model.replace(/^Х\d+/,'').replace(/\s+/g,'')}</td>
+            <td>${p.qNom}</td>
+            <td>${Math.round(p.eff*100)}%</td>
+            <td>${st}</td>
+            <td>${sec}</td>
+            <td><button class="btn btn-sm" style="padding:2px 12px;font-size:12px;" onclick="document.getElementById('selectedPumpModel').value='${p.model}'; calculateESP();">Выбрать</button></td>
+        </tr>`;
+    });
+
+    const container = document.getElementById('resultsContainer');
+    container.classList.add('visible');
+    const flowInRange = flowRate >= pump.qMin && flowRate <= pump.qMax;
+    const rangeNote = flowInRange ? '' : `<div class="note warning"><span>⚠️</span><span>Дебит <strong>${flowRate} м³/сут</strong> вне оптимального диапазона насоса (${pump.qMin}–${pump.qMax}).</span></div>`;
+    const stagesNote = stagesWarning ? `<div class="note warning"><span>⚠️</span><span>${stagesWarning}</span></div>` : '';
+    const powerNote = powerWarning ? `<div class="note warning"><span>⚠️</span><span>${powerWarning}</span></div>` : '';
+    const motorLoadNote = (motorLoadPercent < 70 || motorLoadPercent > 90) ? 
+        `<div class="note warning"><span>⚠️</span><span>Загрузка двигателя ${motorLoadPercent}% (рекомендуется 70–90%).</span></div>` : '';
+
+    container.innerHTML = `
+        <div class="result-summary">
+            <div class="result-pump-icon">⚙️</div>
+            <div class="result-main">
+                <div class="pump-name">${formattedPump}</div>
+                <div class="pump-desc">Габарит ${pump.series}, Ø${pump.diam} мм, номинал ${pump.qNom} м³/сут</div>
+                ${actualHead !== totalHead ? `<div style="margin-top:6px; font-size:13px; color:var(--warning);">⚠️ Требуемый напор ${totalHead} м → достигнут ${actualHead} м</div>` : ''}
+            </div>
+            <div class="result-stats">
+                <div class="result-stat"><div class="value">${actualHead} м</div><div class="label">Напор</div></div>
+                <div class="result-stat"><div class="value">${Math.round(shaftPowerKW)} кВт</div><div class="label">на валу</div></div>
+                <div class="result-stat"><div class="value">${sections} секц.</div><div class="label">секций</div></div>
+            </div>
+        </div>
+        ${rangeNote}${stagesNote}${powerNote}
+        <div class="equipment-row">
+            <div class="eq-card"><div class="eq-title">🎯 Насос</div><div class="eq-model">${formattedPump}</div><div class="eq-specs"><span>Ступеней: <strong>${stagesNeeded}</strong></span><span>Секций: <strong>${sections}</strong></span><span>Напор/ступ: <strong>${headPerStageAdj.toFixed(1)} м</strong></span><span>Длина: ~${pumpLength} м</span><span>Вес: ~${pumpWeight} кг</span></div></div>
+            <div class="eq-card"><div class="eq-title">🔌 Двигатель</div><div class="eq-model">${motor ? motor.model : '—'}</div><div class="eq-specs"><span>Мощность: <strong>${motor?motor.power:'—'} кВт</strong></span><span>U: ${motor?motor.voltage:'—'} В</span><span>I: ${motor?motor.current:'—'} А</span><span>Длина: ${motor?motor.length:'—'} м</span></div>${motorLoadNote}</div>
+        </div>
+        <div class="equipment-row">
+            <div class="eq-card"><div class="eq-title">🔗 Кабель</div><div class="eq-model">${cable ? cable.model : '—'} ${cableNote ? `<span style="font-size:0.8em;color:var(--warning);">(${cableNote})</span>` : ''}</div><div class="eq-specs"><span>Сечение: <strong>${cable?cable.section:'—'} мм²</strong></span><span>Доп. ток: ${cable?cable.current:'—'} А</span><span>Потери: ~${Math.round(cableLoss)} В</span></div></div>
+            <div class="eq-card"><div class="eq-title">⚡ Трансформатор и отпайка</div><div class="eq-model">${transformer.type}</div><div class="eq-specs"><span>Мощность: <strong>${transformer.power} кВА</strong></span><span>U₂ ном: ${transformer.voltageNN} В</span><span>Требуемое U₂: ${transformerData.requiredVoltage} В</span><span>Отпайка: ступень <strong>${transformerData.tap}</strong> (≈${transformerData.actualVoltage} В)</span></div></div>
+        </div>
+        <div class="equipment-row single">
+            <div class="eq-card"><div class="eq-title">🛡️ Гидрозащита</div><div class="eq-model">${protector.model}</div><div class="eq-specs"><span>Нагрузка на пяту: <strong>${protector.load} кг</strong></span><span>Объём масла: ~${protector.oil} л</span></div></div>
+        </div>
+        <div class="equipment-row single">
+            <div class="eq-card"><div class="eq-title">📊 Сводка</div><div class="eq-specs"><span>Общая длина: <strong>~${totalLength} м</strong></span><span>Общий вес: <strong>~${totalWeight} кг</strong></span><span>Температура: <strong>${bottomTemp}°C</strong></span><span>Обводнённость: <strong>${waterCut}%</strong></span><span>Частота: <strong>${frequency} Гц</strong></span></div></div>
+        </div>
+        <div class="card" style="margin-top:16px;">
+            <div class="card-header"><h2>🔄 Другие подходящие насосы</h2></div>
+            <table class="alt-table">
+                <thead><tr><th>Модель</th><th>Q ном.</th><th>КПД</th><th>Ступеней</th><th>Секций</th><th></th></tr></thead>
+                <tbody>${altRows}</tbody>
+            </table>
+        </div>
+        <div style="margin-top:14px;display:flex;gap:10px;flex-wrap:wrap;" class="no-print">
+            <button class="btn btn-primary btn-sm" onclick="window.print()">🖨️ Печать</button>
+            <button class="btn btn-secondary btn-sm" onclick="document.getElementById('resultsContainer').classList.remove('visible');window.scrollTo({top:0,behavior:'smooth'});">↩ Новый расчёт</button>
+        </div>
+    `;
+    setTimeout(() => container.scrollIntoView({behavior:'smooth',block:'start'}), 100);
+}
+
+// Автопересчёт напора и сброс ручного выбора насоса при изменении полей
+document.addEventListener('DOMContentLoaded', () => {
+    const auto = document.getElementById('calcHeadAuto');
+    const depth = document.getElementById('pumpDepth');
+    const pressure = document.getElementById('wellheadPressure');
+    const intakePressure = document.getElementById('intakePressure');
+    const density = document.getElementById('fluidDensity');
+    const head = document.getElementById('totalHead');
+    const flowRate = document.getElementById('flowRate');
+    const casingDiameter = document.getElementById('casingDiameter');
+    const frequency = document.getElementById('frequency');
+    const selectedPump = document.getElementById('selectedPumpModel');
+
+    function update() {
+        if (auto.checked) {
+            head.value = calculateHeadFromDepth(
+                parseFloat(depth.value)||0, 
+                parseFloat(density.value)||1000, 
+                parseFloat(pressure.value)||0,
+                parseFloat(intakePressure.value)||0
+            );
+            head.style.background='#f8fbff';
+        } else { head.style.background='#fafafa'; }
+    }
+
+    // При изменении любых параметров сбрасываем ручной выбор насоса
+    function resetPumpSelection() {
+        if (selectedPump.value) {
+            selectedPump.value = '';
+        }
+    }
+
+    auto.addEventListener('change', update);
+    depth.addEventListener('input', () => { resetPumpSelection(); update(); });
+    pressure.addEventListener('input', () => { resetPumpSelection(); update(); });
+    intakePressure.addEventListener('input', () => { resetPumpSelection(); update(); });
+    density.addEventListener('input', () => { resetPumpSelection(); update(); });
+    flowRate.addEventListener('input', resetPumpSelection);
+    casingDiameter.addEventListener('change', resetPumpSelection);
+    frequency.addEventListener('input', resetPumpSelection);
+    
+    update();
+    document.addEventListener('keydown', e => { if (e.key==='Enter' && e.target.tagName==='INPUT') { e.preventDefault(); calculateESP(); } });
+});
+</script>
+</body>
+</html>
