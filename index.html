@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ESP Selector · Подбор УЭЦН НТ (встроенный каталог)</title>
 <style>
+/* ... весь CSS остается без изменений ... */
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
   --bg:#f5f5f7;--surface:#fff;--surface2:#f2f2f2;
@@ -586,12 +587,17 @@ function estimateViscosity(temp, rho) {
   return parseFloat((Math.exp(-12.32 + 5164/T) * Math.exp((rho-850)/100)).toFixed(1));
 }
 
+// Исправленная коррекция на вязкость: пороги Re сдвинуты для большей реалистичности
 function correctForViscosity(Q, H, eff, viscosity) {
   if (viscosity <= 5) return { Q, H, eff };
-  const Re = (Q * 1000) / (viscosity * 0.001);
+  // Используем характерную скорость и диаметр ~100 мм для оценки Re
+  const D = 0.1; // м
+  const A = Math.PI * (D/2)**2;
+  const v = (Q / 86400) / A; // м/с
+  const Re = (v * D * 1000) / (viscosity * 1e-6); // перевод сП -> Па·с: 1 сП = 0.001 Па·с
   let kQ=1, kH=1, kEff=1;
-  if (Re < 1000) { kQ=0.65; kH=0.75; kEff=0.55; }
-  else if (Re < 5000) { kQ=0.90; kH=0.92; kEff=0.88; }
+  if (Re < 2000) { kQ=0.65; kH=0.75; kEff=0.55; }
+  else if (Re < 10000) { kQ=0.90; kH=0.92; kEff=0.88; }
   return { Q: Q*kQ, H: H*kH, eff: eff*kEff };
 }
 
@@ -963,7 +969,7 @@ function exportGraphToPNG(canvas, pumpName) {
 }
 
 // ═══════════════════════════════════════════
-// ГЛАВНАЯ ФУНКЦИЯ ПОДБОРА
+// ГЛАВНАЯ ФУНКЦИЯ ПОДБОРА (ИСПРАВЛЕНА)
 // ═══════════════════════════════════════════
 function selectESP() {
   const Q = v('s_q');
@@ -1001,7 +1007,14 @@ function selectESP() {
     })
     .map(p => {
       const viscCorr = correctForViscosity(p.q50, p.h_sec, p.eff, visc);
-      // Создаём скорректированный объект насоса для расчётов и графиков
+
+      // === ИСПРАВЛЕНИЕ: пересчёт мощности секции с учётом нового КПД ===
+      const eff_old = p.eff / 100;
+      const Ph50_old = p.n100 * eff_old; // гидравлическая мощность на исходном КПД
+      const Ph50_new = Ph50_old * (viscCorr.Q / p.q50) * (viscCorr.H / p.h_sec); // с коррекцией Q и H
+      const n100_corrected = Ph50_new / (viscCorr.eff / 100);
+      // ================================================================
+
       const pCorr = {
         ...p,
         qmin: p.qmin * k * viscCorr.Q / p.q50,
@@ -1009,7 +1022,7 @@ function selectESP() {
         q50: p.q50 * k * viscCorr.Q / p.q50,
         h_sec: viscCorr.H,
         eff: viscCorr.eff,
-        n100: p.n100,
+        n100: n100_corrected,  // используем исправленное значение
         maxPwrDir: p.maxPwrDir,
         maxPwrSoft: p.maxPwrSoft
       };
